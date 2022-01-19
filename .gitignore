@@ -1,0 +1,23 @@
+# Logs
+logs
+*.log
+yarn-error.log*
+
+node_modules/
+.yarn-integrity
+
+# dotenv environment variables file
+.env
+.env.test
+
+/public
+
+/build
+
+/chrome-store
+
+yarn.lock
+
+funimation-ext.code-workspace
+
+.TODO
