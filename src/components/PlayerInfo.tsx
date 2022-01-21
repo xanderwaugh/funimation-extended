@@ -1,5 +1,5 @@
-import * as React from "react";
-import { Heading, HStack } from "@chakra-ui/react";
+import React from "react";
+import { Text, HStack } from "@chakra-ui/react";
 import { formatTime } from "../utils";
 
 interface PlayerInfo {
@@ -17,18 +17,12 @@ const PlayerInfo: React.FC<PlayerInfo> = ({ showname, playerTime }) => {
 
     return (
         // * Player Controls */
-        <HStack
-            mx="auto"
-            border="1px solid"
-            borderColor={"gray"}
-            shadow="lg"
-            rounded={"lg"}
-            px={2}
-        >
-            <Heading fontSize={"md"}>{formattedShowName}</Heading>
-            <Heading fontSize={"md"}>
-                Time {playerTime ? formatTime(playerTime) : "00:00"}
-            </Heading>
+        <HStack mx="auto" border="1px solid" borderColor={"gray"} px={1}>
+            <Text fontSize={"md"}>{formattedShowName}</Text>
+            <Text fontSize={"md"}>
+                Time <br />
+                {playerTime ? formatTime(playerTime) : "00:00"}
+            </Text>
         </HStack>
     );
 };

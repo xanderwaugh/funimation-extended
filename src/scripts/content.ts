@@ -1,7 +1,5 @@
-import { getIntroKey, getOutroKey, setCStorage } from "../utils";
-const nextEpQuery = ".d-flex .align-center .justify-center .next-panel";
 // ! Stuff here
-console.log("Content Script Loaded");
+import { getIntroKey, getOutroKey, setCStorage } from "../utils";
 
 interface msgObj {
     action: string;
@@ -27,23 +25,31 @@ window.addEventListener("load", () => {
         }
         if (!value[outroKey]) {
             const vid_duration = document.querySelector("video")?.duration;
-            setCStorage(outroKey, vid_duration ? vid_duration : 99999999);
+            // Set Default Video Duration
+            if (vid_duration) setCStorage(outroKey, vid_duration);
         }
         const introtime = value[introKey];
         const outrotime = value[outroKey];
-        main(introtime, outrotime);
+        if (!chrome.runtime.onMessage) {
+            setTimeout(() => {
+                main(introtime, outrotime);
+            }, 2000);
+        } else {
+            main(introtime, outrotime);
+        }
     });
 });
 
 // * Document Done Loading
 const main = (_intro?: number, _outro?: number) => {
-    const playerDuration = document.querySelector("video")?.duration;
+    const playerDuration = document.querySelector("video")?.duration ?? _outro;
     let introTime = _intro ?? 0;
+    let outroTime = playerDuration;
     let isEnabled = true;
 
-    // TODO Change to let
-    const outroTime = _outro ?? playerDuration ?? 99999999;
+    let maxQuality = false;
 
+    // Message Handler
     chrome.runtime.onMessage.addListener(
         (request: msgObj, sender, sendResponse) => {
             if (request.action === "getShowName") {
@@ -61,7 +67,12 @@ const main = (_intro?: number, _outro?: number) => {
                 });
             } else if (request.action === "getOutroTime") {
                 sendResponse({
-                    value: outroTime,
+                    value: outroTime ?? 1920,
+                });
+            } else if (request.action === "getVideoLength") {
+                const vidDuration = document.querySelector("video")?.duration;
+                sendResponse({
+                    value: vidDuration,
                 });
             } else if (request.action === "disable") {
                 console.log("Funex Disabled");
@@ -69,15 +80,26 @@ const main = (_intro?: number, _outro?: number) => {
             } else if (request.action === "enable") {
                 console.log("Funex Enabled");
                 isEnabled = true;
+            } else if (request.action === "maxQuality-enable") {
+                console.log("1080p Enabled");
+                maxQuality = true;
+            } else if (request.action === "maxQuality-disable") {
+                console.log("1080p Disabled");
+                maxQuality = false;
             }
         }
     );
+
     console.log("Content Script Ready");
 
     chrome.storage.onChanged.addListener((changes) => {
-        for (const [_, { oldValue, newValue }] of Object.entries(changes)) {
-            // TODO Fix This
-            introTime = newValue;
+        for (const [key, { newValue }] of Object.entries(changes)) {
+            const showname = getShowname();
+            if (key === getIntroKey(showname)) {
+                introTime = newValue;
+            } else if (key === getOutroKey(showname)) {
+                outroTime = newValue;
+            }
         }
     });
 
@@ -93,18 +115,24 @@ const main = (_intro?: number, _outro?: number) => {
             if (playerTime < introTime) {
                 // Todo SKIP or Add Skip Intro Button
                 console.log("Skipping Intro...");
-                document.querySelector("video")!.currentTime = introTime;
+                // eslint-disable-next-line prefer-const
+                let video = document.querySelector("video");
+                if (video) video.currentTime = introTime;
             }
             // ! Check if player is after Outro Time
-            if (playerTime > outroTime) {
-                console.log("Skipping to Next Episode...");
+            if (outroTime && playerTime > outroTime) {
+                // console.log("Skipping to Next Episode...");
                 // Todo Show Next Episode Card
-                const nextEp = document.querySelector<HTMLElement>(nextEpQuery);
-                if (nextEp) {
-                    nextEp.click();
-                }
+                const nextEP: HTMLElement = document.getElementsByClassName(
+                    "hydra-video-next"
+                )[0] as HTMLElement;
+                nextEP.click();
+            }
+            // ! Check if MaxQuality
+            if (maxQuality) {
+                document.getElementById("input-111")?.click();
             }
         }
-    }, 2000);
+    }, 5000);
     return () => clearInterval(timer);
 };

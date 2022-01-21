@@ -8,6 +8,8 @@ import {
     HStack,
     Switch,
     Text,
+    Skeleton,
+    Checkbox,
 } from "@chakra-ui/react";
 import {
     sendAction,
@@ -15,6 +17,7 @@ import {
     getIntroKey,
     setCStorage,
     getOutroKey,
+    rmItemCStorage,
 } from "./utils";
 import { theme } from "./components/theme";
 import { SkipStack } from "./components/SkipStack";
@@ -22,16 +25,26 @@ import { Wrapper } from "./components/Wrapper";
 import { PlayerInfo } from "./components/PlayerInfo";
 
 const App: React.FC = () => {
+    // ! Has Page Loaded
+    const [mount, setMount] = useState(false);
     // ! Enable / Disable Extension Controlling Funimation
     const [isEnabled, setEnabled] = useState(true);
-    const [showName, setShowName] = useState("");
+
+    // Player Keys
     const [playerTime, setPlayerTime] = useState<number | undefined>();
+    const [videoLength, setVideoLength] = useState<number | undefined>();
+    const [showName, setShowName] = useState("");
+
+    // Chrome Storage Keys
     const [introTime, setIntroTime] = useState<number | undefined>();
-    // * Setting Outro Skip Time
     const [outroTime, setOutroTime] = useState<number | undefined>();
+
+    // additions
+    const [maxQuality, setMaxQuality] = useState(false);
 
     // * Smooth Button Animations
     const [introBtnLoading, setIntroLoading] = useState(false);
+
     const [outroBtnLoading, setOutroLoading] = useState(false);
 
     // * Called on Inital Popup Load
@@ -41,6 +54,7 @@ const App: React.FC = () => {
         sendActionCB("getShowName", setShowName);
         sendActionCB("getIntroTime", setIntroTime);
         sendActionCB("getOutroTime", setOutroTime);
+        sendActionCB("getVideoLength", setVideoLength);
 
         // ! Update Every Sec
         const interval = setInterval(() => {
@@ -48,19 +62,30 @@ const App: React.FC = () => {
             sendActionCB("getPlayerTime", setPlayerTime);
         }, 1000);
         return () => clearInterval(interval);
-    }, [showName, playerTime, introTime, outroTime]);
+    }, [showName, playerTime, introTime, outroTime, videoLength]);
+
+    useEffect(() => {
+        setMount(true);
+    }, []);
+
+    if (!mount)
+        return (
+            <Wrapper>
+                <Skeleton />
+            </Wrapper>
+        );
 
     return (
         <Wrapper>
             <VStack mx="auto" divider={<Divider borderColor="gray" />}>
-                <VStack spacing={0}>
+                <VStack spacing={0} pt={".5rem"}>
                     <Heading lineHeight={"1"}>Funimation</Heading>
                     <Heading lineHeight={"1"}>Extended</Heading>
                 </VStack>
                 {/* HERO */}
                 <HStack>
                     <Text textAlign={"center"} fontSize={"md"}>
-                        Enhance all your watching experience!
+                        Improve your watching experience!
                     </Text>
                     <VStack>
                         <Switch
@@ -70,7 +95,7 @@ const App: React.FC = () => {
                             shadow={"md"}
                             onChange={() => {
                                 setEnabled(!isEnabled);
-                                sendAction(isEnabled ? "enable" : "disable");
+                                sendAction(isEnabled ? "disable" : "enable");
                             }}
                         />
                         <Text fontSize={"1rem"}>
@@ -78,13 +103,6 @@ const App: React.FC = () => {
                         </Text>
                     </VStack>
                 </HStack>
-                {/* <Hero
-                    isEnabled={isEnabled}
-                    clickEvent={() => {
-                        setEnabled(!isEnabled);
-                        sendAction(isEnabled ? "enable" : "disable");
-                    }}
-                /> */}
 
                 {/* // * Player Controls */}
                 <PlayerInfo showname={showName} playerTime={playerTime} />
@@ -95,15 +113,26 @@ const App: React.FC = () => {
                     timeTitle="Intro Time"
                     timeValue={introTime}
                     isLoading={introBtnLoading}
+                    resetBTN={() => {
+                        const waitkey = setTimeout(() => {
+                            setIntroTime(0);
+                            const introKey = getIntroKey(showName);
+                            rmItemCStorage(introKey).then(() => {
+                                console.log("Sucessfully cleared", introKey);
+                            });
+                        }, 1000);
+                        return () => clearTimeout(waitkey);
+                    }}
                     btnEvent={() => {
                         if (!playerTime) return;
                         setIntroLoading(true);
-                        setIntroTime(playerTime);
-                        const introKey = getIntroKey(showName);
-                        setCStorage(introKey, playerTime);
-                        setTimeout(() => {
+                        const waitkey = setTimeout(() => {
+                            setIntroTime(playerTime);
+                            const introKey = getIntroKey(showName);
+                            setCStorage(introKey, playerTime);
                             setIntroLoading(false);
                         }, 1000);
+                        return () => clearTimeout(waitkey);
                     }}
                 />
 
@@ -113,17 +142,45 @@ const App: React.FC = () => {
                     timeTitle="Outro Time"
                     timeValue={outroTime}
                     isLoading={outroBtnLoading}
+                    resetBTN={() => {
+                        const waitkey = setTimeout(() => {
+                            setOutroTime(undefined);
+                            const outroKey = getOutroKey(showName);
+                            rmItemCStorage(outroKey).then(() => {
+                                console.log("Sucessfully cleared", outroKey);
+                            });
+                        }, 1000);
+                        return () => clearTimeout(waitkey);
+                    }}
                     btnEvent={() => {
-                        if (!playerTime) return;
                         setOutroLoading(true);
-                        setOutroTime(playerTime);
-                        const outroKey = getOutroKey(showName);
-                        setCStorage(outroKey, playerTime);
-                        setTimeout(() => {
+                        const waitkey = setTimeout(() => {
+                            const outroKey = getOutroKey(showName);
+                            setCStorage(outroKey, playerTime ?? 1920);
+                            setOutroTime(playerTime);
                             setOutroLoading(false);
                         }, 1000);
+                        return () => clearTimeout(waitkey);
                     }}
                 />
+
+                {/* Checkbox for 1080p */}
+                <Checkbox
+                    defaultChecked={maxQuality}
+                    onChange={() => {
+                        setMaxQuality(!maxQuality);
+                        const waitkey = setTimeout(() => {
+                            sendAction(
+                                maxQuality
+                                    ? "maxQuality-enable"
+                                    : "maxQuality-disable"
+                            );
+                        }, 400);
+                        return () => clearTimeout(waitkey);
+                    }}
+                >
+                    Auto 1080p
+                </Checkbox>
             </VStack>
         </Wrapper>
     );

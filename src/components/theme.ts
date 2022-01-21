@@ -1,5 +1,6 @@
 import { extendTheme, withDefaultColorScheme } from "@chakra-ui/react";
 import { createBreakpoints } from "@chakra-ui/theme-tools";
+import "@fontsource/allerta";
 
 const theme = extendTheme(
     {
@@ -10,7 +11,8 @@ const theme = extendTheme(
             },
         },
         fonts: {
-            mono: "Roboto",
+            mono: "Allerta",
+            heading: "Allerta",
         },
         breakpoints: createBreakpoints({
             sm: "40em",
@@ -19,7 +21,7 @@ const theme = extendTheme(
             xl: "80em",
         }),
         config: {
-            initialColorMode: "light",
+            initialColorMode: "dark",
         },
     },
     withDefaultColorScheme({ colorScheme: "facebook" })

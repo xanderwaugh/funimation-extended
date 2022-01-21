@@ -1,4 +1,4 @@
-import * as React from "react";
+import React from "react";
 
 // * Send Action to content script w/ Response
 const tabQueryOpts: chrome.tabs.QueryInfo = {
@@ -7,6 +7,7 @@ const tabQueryOpts: chrome.tabs.QueryInfo = {
 };
 const sendActionCB = (
     action: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     callbackfn: React.Dispatch<React.SetStateAction<any>>
 ) => {
     chrome.tabs.query(tabQueryOpts).then((tabs) => {
@@ -72,7 +73,12 @@ const setCStorage = (key: string, value: number) =>
             [key]: value,
         })
         .then((value) => value)
-        .catch(() => console.log(`err set  ${key}:${value}`));
+        .catch(() => console.error(`err ${key}:${value}`));
+
+const rmItemCStorage = (key: string) =>
+    chrome.storage.sync
+        .remove(key)
+        .catch(() => console.error(`err clearing ${key}`));
 
 export {
     sendAction,
@@ -82,4 +88,5 @@ export {
     getOutroKey,
     getCStorage,
     setCStorage,
+    rmItemCStorage,
 };

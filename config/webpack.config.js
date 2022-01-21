@@ -36,11 +36,11 @@ module.exports = {
                     { loader: "style-loader" },
                     {
                         loader: "css-loader",
-                        options: {
-                            modules: true,
-                            localsConvention: "camelCase",
-                            sourceMap: true,
-                        },
+                        // options: {
+                        //     modules: true,
+                        //     localsConvention: "camelCase",
+                        //     sourceMap: true,
+                        // },
                     },
                 ],
             },
@@ -67,4 +67,5 @@ module.exports = {
             progress: true,
         },
     },
+    stats: { warnings: false },
 };

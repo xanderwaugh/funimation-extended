@@ -8,15 +8,12 @@ import {
     HTMLChakraProps,
     IconButton,
     Stack,
-    TextProps,
     useColorModeValue,
     useToken,
 } from "@chakra-ui/react";
 import { FaGithub, FaLinkedin, FaTwitter } from "react-icons/fa";
 
-interface SimpleFooterProps {}
-
-const SimpleFooter: React.FC<SimpleFooterProps> = () => {
+const SimpleFooter: React.FC = () => {
     return (
         <Box
             as="footer"
