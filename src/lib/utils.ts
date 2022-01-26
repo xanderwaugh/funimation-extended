@@ -7,15 +7,15 @@ const tabQueryOpts: chrome.tabs.QueryInfo = {
 };
 const sendActionCB = (
   action: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  //eslint-disable-next-line @typescript-eslint/no-explicit-any
   callbackfn: React.Dispatch<React.SetStateAction<any>>
 ) => {
-  chrome.tabs.query(tabQueryOpts).then(tabs => {
+  chrome.tabs.query(tabQueryOpts).then((tabs) => {
     if (tabs[0].id) {
       chrome.tabs.sendMessage(
         tabs[0].id,
         { action: action },
-        response => {
+        (response) => {
           if (response.value) {
             callbackfn(response.value);
           }
@@ -29,8 +29,8 @@ const sendActionCB = (
 const sendAction = (action: string) => {
   chrome.tabs
     .query(tabQueryOpts)
-    .then(tabs => tabs[0].id)
-    .then(tab => {
+    .then((tabs) => tabs[0].id)
+    .then((tab) => {
       if (tab) {
         chrome.tabs.sendMessage(tab, { action: action });
       } else {
@@ -64,7 +64,7 @@ const getOutroKey = (showname: string): string => {
 const getCStorage = (key: string) =>
   chrome.storage.sync
     .get([key])
-    .then(value => value)
+    .then((value) => value)
     .catch(() => console.log(`err fetch ${key}`));
 
 const setCStorage = (key: string, value: number) =>
@@ -72,7 +72,7 @@ const setCStorage = (key: string, value: number) =>
     .set({
       [key]: value,
     })
-    .then(value => value)
+    .then((value) => value)
     .catch(() => console.error(`err ${key}:${value}`));
 
 const rmItemCStorage = (key: string) =>

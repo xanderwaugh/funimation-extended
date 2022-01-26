@@ -1,6 +1,6 @@
 import * as React from "react";
 import { VStack, Button, Heading, HStack } from "@chakra-ui/react";
-import { formatTime } from "../utils";
+import { formatTime } from "../lib/utils";
 
 interface CompProps {
   btn: string;

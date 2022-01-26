@@ -1,5 +1,5 @@
 // ! Stuff here
-import { getIntroKey, getOutroKey, setCStorage } from "../utils";
+import { getIntroKey, getOutroKey, setCStorage } from "../lib/utils";
 
 interface msgObj {
   action: string;
@@ -18,7 +18,7 @@ window.addEventListener("load", () => {
   const introKey = getIntroKey(showname);
   const outroKey = getOutroKey(showname);
 
-  chrome.storage.sync.get([introKey, outroKey]).then(value => {
+  chrome.storage.sync.get([introKey, outroKey]).then((value) => {
     if (!value[introKey]) {
       setCStorage(introKey, 0);
     }
@@ -41,70 +41,73 @@ window.addEventListener("load", () => {
 
 // * Document Done Loading
 const main = (_intro?: number, _outro?: number) => {
-  const playerDuration = document.querySelector("video")?.duration ?? _outro;
+  const playerDuration =
+    document.querySelector("video")?.duration ?? _outro;
   let introTime = _intro ?? 0;
   let outroTime = playerDuration;
   let isEnabled = true;
 
   // Message Handler
-  chrome.runtime.onMessage.addListener((req: msgObj, _msgSender, send) => {
-    switch (req.action) {
-      case "getShowName": {
-        send({
-          value: getShowname(),
-        });
-        break;
-      }
-      case "getPlayerTime": {
-        send({
-          value: document.querySelector("video")?.currentTime,
-        });
-        break;
-      }
-      case "getIntroTime": {
-        send({
-          value: introTime,
-        });
-        break;
-      }
-      case "getOutroTime": {
-        send({
-          value: outroTime ?? 1920,
-        });
-        break;
-      }
-      case "getVideoLength": {
-        send({
-          value: document.querySelector("video")?.duration,
-        });
-        break;
-      }
-      case "disable": {
-        console.log("Funex Disabled");
-        isEnabled = false;
-        break;
-      }
-      case "enable": {
-        console.log("Funex Enabled");
-        isEnabled = true;
-        break;
-      }
-      case "maxQuality-enable": {
-        console.log("1080p Enabled");
-        document.getElementById("input-111")?.click();
-        break;
-      }
-      case "maxQuality-disable": {
-        console.log("1080p Disabled");
-        break;
+  chrome.runtime.onMessage.addListener(
+    (req: msgObj, _msgSender, send) => {
+      switch (req.action) {
+        case "getShowName": {
+          send({
+            value: getShowname(),
+          });
+          break;
+        }
+        case "getPlayerTime": {
+          send({
+            value: document.querySelector("video")?.currentTime,
+          });
+          break;
+        }
+        case "getIntroTime": {
+          send({
+            value: introTime,
+          });
+          break;
+        }
+        case "getOutroTime": {
+          send({
+            value: outroTime ?? 1920,
+          });
+          break;
+        }
+        case "getVideoLength": {
+          send({
+            value: document.querySelector("video")?.duration,
+          });
+          break;
+        }
+        case "disable": {
+          console.log("Funex Disabled");
+          isEnabled = false;
+          break;
+        }
+        case "enable": {
+          console.log("Funex Enabled");
+          isEnabled = true;
+          break;
+        }
+        case "maxQuality-enable": {
+          console.log("1080p Enabled");
+          document.getElementById("input-111")?.click();
+          break;
+        }
+        case "maxQuality-disable": {
+          console.log("1080p Disabled");
+          break;
+        }
       }
     }
-  });
+  );
 
   console.log("Content Script Ready");
 
   // Listen for cstorage updates
-  chrome.storage.onChanged.addListener(changes => {
+  chrome.storage.onChanged.addListener((changes) => {
     for (const [key, { newValue }] of Object.entries(changes)) {
       const showname = getShowname();
       if (key === getIntroKey(showname)) {
@@ -136,7 +139,9 @@ const main = (_intro?: number, _outro?: number) => {
       if (outroTime && playerTime > outroTime) {
         console.log("Skipping to Next Episode...");
         // Todo Show Next Episode Card
-        const nextEP: HTMLElement = document.getElementsByClassName("hydra-video-next")[0] as HTMLElement;
+        const nextEP: HTMLElement = document.getElementsByClassName(
+          "hydra-video-next"
+        )[0] as HTMLElement;
         nextEP.click();
       }
     }
