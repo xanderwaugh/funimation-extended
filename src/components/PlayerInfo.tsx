@@ -1,6 +1,6 @@
 import React from "react";
 import { Text, HStack } from "@chakra-ui/react";
-import { formatTime } from "../lib/utils";
+import { formatTime } from "../js/utils";
 
 interface PlayerInfo {
   showname?: string;

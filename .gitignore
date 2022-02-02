@@ -6,19 +6,17 @@ yarn-error.log*
 node_modules/
 .yarn-integrity
 
-# dotenv environment variables file
 .env
 .env.test
 
 /public
 
-/build
-build.zip
+/dist
+*.zip
 
 /chrome-store
 
 yarn.lock
 
-funimation-ext.code-workspace
-
 .TODO
+*.code-workspace

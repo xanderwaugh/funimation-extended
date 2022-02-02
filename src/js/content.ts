@@ -1,82 +1,72 @@
-// ! Stuff here
-import { getIntroKey, getOutroKey, setCStorage } from "../lib/utils";
+import { msgObj } from "./utils";
 
-interface msgObj {
-  action: string;
-  value?: number;
+function getIntroKey(showname: string): string {
+  return `${showname}-intro`;
 }
-
-const getShowname = (): string => {
+function getOutroKey(showname: string): string {
+  return `${showname}-outro`;
+}
+async function setCStorage(key: string, value: number | boolean) {
+  await chrome.storage.sync
+    .set({
+      [key]: value,
+    })
+    .catch((reas) =>
+      console.log(`Err Setting Key ${key}, reason: ${reas}`)
+    );
+}
+function getShowname() {
   if (window.location.href.includes("https://www.funimation.com/v/")) {
     return window.location.href.split("/v/")[1].split("/")[0];
+  } else {
+    return "";
   }
-  return "";
-};
-
-window.addEventListener("load", () => {
-  const showname = getShowname();
-  const introKey = getIntroKey(showname);
-  const outroKey = getOutroKey(showname);
-
-  chrome.storage.sync.get([introKey, outroKey]).then((value) => {
-    if (!value[introKey]) {
-      setCStorage(introKey, 0);
-    }
-    if (!value[outroKey]) {
-      const vid_duration = document.querySelector("video")?.duration;
-      // Set Default Video Duration
-      if (vid_duration) setCStorage(outroKey, vid_duration);
-    }
-    const introtime = value[introKey];
-    const outrotime = value[outroKey];
-    if (!chrome.runtime.onMessage) {
-      setTimeout(() => {
-        main(introtime, outrotime);
-      }, 2000);
-    } else {
-      main(introtime, outrotime);
-    }
-  });
-});
-
-// * Document Done Loading
-const main = (_intro?: number, _outro?: number) => {
+}
+function contentScript(_intro?: number, _outro?: number) {
   const playerDuration =
     document.querySelector("video")?.duration ?? _outro;
   let introTime = _intro ?? 0;
   let outroTime = playerDuration;
   let isEnabled = true;
+  let maxQuality = false;
+  chrome.storage.sync.get(["maxQuality"]).then((value) => {
+    if (value["maxQuality"]) {
+      maxQuality = true;
+    } else {
+      maxQuality = false;
+    }
+  });
 
   // Message Handler
   chrome.runtime.onMessage.addListener(
-    (req: msgObj, _msgSender, send) => {
+    (req: msgObj, _msgSender, respond) => {
       switch (req.action) {
         case "getShowName": {
-          send({
+          respond({
             value: getShowname(),
           });
           break;
         }
         case "getPlayerTime": {
-          send({
+          respond({
             value: document.querySelector("video")?.currentTime,
           });
           break;
         }
         case "getIntroTime": {
-          send({
+          respond({
             value: introTime,
           });
           break;
         }
         case "getOutroTime": {
-          send({
+          respond({
             value: outroTime ?? 1920,
           });
           break;
         }
         case "getVideoLength": {
-          send({
+          respond({
             value: document.querySelector("video")?.duration,
           });
           break;
@@ -93,18 +83,33 @@ const main = (_intro?: number, _outro?: number) => {
         }
         case "maxQuality-enable": {
           console.log("1080p Enabled");
+          setCStorage("maxQuality", true);
+          maxQuality = true;
           document.getElementById("input-111")?.click();
           break;
         }
         case "maxQuality-disable": {
           console.log("1080p Disabled");
+          maxQuality = false;
+          setCStorage("maxQuality", false);
+          break;
+        }
+        // ! Listen for content script call
+        case "isOnFunimation": {
+          respond({
+            value: getShowname().length > 0,
+          });
+          break;
+        }
+        default: {
+          respond({
+            value: true,
+          });
           break;
         }
       }
     }
   );
-
-  console.log("Content Script Ready");
 
   // Listen for cstorage updates
   chrome.storage.onChanged.addListener((changes) => {
@@ -114,6 +119,8 @@ const main = (_intro?: number, _outro?: number) => {
         introTime = newValue;
       } else if (key === getOutroKey(showname)) {
         outroTime = newValue;
+      } else if (key === "maxQuality") {
+        maxQuality = newValue;
       }
     }
   });
@@ -123,6 +130,10 @@ const main = (_intro?: number, _outro?: number) => {
   const timer = setInterval(() => {
     if (!isEnabled) {
       return;
+    }
+
+    if (maxQuality) {
+      document.getElementById("input-111")?.click();
     }
 
     const playerTime = document.querySelector("video")?.currentTime;
@@ -147,4 +158,27 @@ const main = (_intro?: number, _outro?: number) => {
     }
   }, pollingRate);
   return () => clearInterval(timer);
-};
+}
+
+function initCS() {
+  console.log("Content Script Injected");
+  const showname = getShowname();
+  const introKey = getIntroKey(showname);
+  const outroKey = getOutroKey(showname);
+
+  chrome.storage.sync.get([introKey, outroKey]).then((value) => {
+    if (!value[introKey]) {
+      setCStorage(introKey, 0);
+    }
+    if (!value[outroKey]) {
+      const vid_duration = document.querySelector("video")?.duration;
+      // Set Default Video Duration
+      if (vid_duration) setCStorage(outroKey, vid_duration);
+    }
+    const introtime = value[introKey];
+    const outrotime = value[outroKey];
+    contentScript(introtime, outrotime);
+  });
+}
+
+initCS();

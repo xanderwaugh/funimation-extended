@@ -7,9 +7,10 @@ const Wrapper: React.FC = ({ children }) => {
   return (
     <Box
       width={240}
-      height={400}
+      height={460}
       paddingX={"6px"}
-      bgColor={colorMode === "light" ? theme.colors.brand.bg : "gray"}>
+      bgColor={colorMode === "light" ? theme.colors.brand.bg : "gray"}
+    >
       {children}
     </Box>
   );

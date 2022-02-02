@@ -9,9 +9,6 @@ import {
   Checkbox,
   Text,
 } from "@chakra-ui/react";
-import { PlayerInfo } from "./components/PlayerInfo";
-import { SkipStack } from "./components/SkipStack";
-import { Wrapper } from "./components/Wrapper";
 import {
   sendActionCB,
   sendAction,
@@ -19,9 +16,16 @@ import {
   rmItemCStorage,
   setCStorage,
   getOutroKey,
-} from "./lib/utils";
+} from "../js/utils";
+import { PlayerInfo } from "../components/PlayerInfo";
+import { SkipStack } from "../components/SkipStack";
+import { Wrapper } from "../components/Wrapper";
+import { ColorModeSwitch } from "../components/ColorModeSwitch";
+import { useColorMode } from "@chakra-ui/react";
 
 const Popup: React.FC = () => {
+  // ! Check if Content Script is Injected
+  const [isContentAlive, setIsContentAlive] = useState(false);
   // ! Has Page Loaded
   const [mount, setMount] = useState(false);
   // ! Enable / Disable Extension Controlling Funimation
@@ -38,6 +42,7 @@ const Popup: React.FC = () => {
 
   // additions
   const [maxQuality, setMaxQuality] = useState(false);
+  const { colorMode } = useColorMode();
 
   // * Smooth Button Animations
   const [introBtnLoading, setIntroLoading] = useState(false);
@@ -46,6 +51,15 @@ const Popup: React.FC = () => {
   // * Called on Inital Popup Load
   useEffect(() => {
     // ? Initial Things - Dont Need Timer
+    // ! Check if on Funimation
+    sendActionCB("isOnFunimation", setIsContentAlive);
+    if (!isContentAlive) return;
+
+    // * Get Max Quality State
+    chrome.storage.sync.get(["maxQuality"]).then((value) => {
+      setMaxQuality(value["maxQuality"]);
+    });
+
     // * IntroTime & OutroTime
     sendActionCB("getShowName", setShowName);
     sendActionCB("getIntroTime", setIntroTime);
@@ -58,7 +72,14 @@ const Popup: React.FC = () => {
       sendActionCB("getPlayerTime", setPlayerTime);
     }, 1000);
     return () => clearInterval(interval);
-  }, [showName, playerTime, introTime, outroTime, videoLength]);
+  }, [
+    showName,
+    playerTime,
+    introTime,
+    outroTime,
+    videoLength,
+    isContentAlive,
+  ]);
 
   useEffect(() => {
     setMount(true);
@@ -70,14 +91,25 @@ const Popup: React.FC = () => {
         <Skeleton />
       </Wrapper>
     );
+  if (!isContentAlive) return <TemplatePopup />;
 
   return (
     <Wrapper>
-      <VStack mx="auto" divider={<Divider borderColor="gray" />}>
-        <VStack spacing={0} pt={".5rem"}>
-          <Heading lineHeight={"1"}>Funimation</Heading>
-          <Heading lineHeight={"1"}>Extended</Heading>
-        </VStack>
+      <VStack
+        mx="auto"
+        divider={
+          <Divider
+            borderColor={colorMode === "light" ? "gray" : "white"}
+          />
+        }
+      >
+        <HStack>
+          <VStack spacing={0} pt={".5rem"}>
+            <Heading lineHeight={"1"}>Funimation</Heading>
+            <Heading lineHeight={"1"}>Extended</Heading>
+          </VStack>
+          <ColorModeSwitch />
+        </HStack>
         {/* HERO */}
         <HStack>
           <Text textAlign={"center"} fontSize={"md"}>
@@ -163,14 +195,14 @@ const Popup: React.FC = () => {
         {/* Checkbox for 1080p */}
         <Checkbox
           defaultChecked={maxQuality}
-          onChange={() => {
-            setMaxQuality(!maxQuality);
-            const waitkey = setTimeout(() => {
-              sendAction(
-                maxQuality ? "maxQuality-enable" : "maxQuality-disable"
-              );
-            }, 400);
-            return () => clearTimeout(waitkey);
+          onChange={(e) => {
+            e.preventDefault();
+            setMaxQuality(e.target.checked);
+            sendAction(
+              e.target.checked
+                ? "maxQuality-enable"
+                : "maxQuality-disable"
+            );
           }}
         >
           Auto 1080p
@@ -180,3 +212,47 @@ const Popup: React.FC = () => {
   );
 };
 export { Popup };
+
+const TemplatePopup: React.FC = () => {
+  const [mount, setMount] = useState(false);
+  const { colorMode } = useColorMode();
+
+  useEffect(() => {
+    setMount(true);
+  }, []);
+
+  if (!mount)
+    return (
+      <Wrapper>
+        <Skeleton />
+      </Wrapper>
+    );
+
+  //
+  return (
+    <Wrapper>
+      <VStack
+        mx="auto"
+        divider={
+          <Divider
+            borderColor={colorMode === "light" ? "gray" : "white"}
+          />
+        }
+      >
+        <HStack>
+          <VStack spacing={0} pt={".5rem"}>
+            <Heading lineHeight={"1"}>Funimation</Heading>
+            <Heading lineHeight={"1"}>Extended</Heading>
+          </VStack>
+          <ColorModeSwitch />
+        </HStack>
+        {/* HERO */}
+        <HStack>
+          <Text textAlign={"center"} fontSize={"md"}>
+            You must be watching on funimation to use this extension!
+          </Text>
+        </HStack>
+      </VStack>
+    </Wrapper>
+  );
+};

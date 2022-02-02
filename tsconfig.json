@@ -1,23 +1,16 @@
 {
   "compilerOptions": {
-    "target": "es5",
-    "module": "ES2020",
-    "lib": ["DOM", "DOM.Iterable"],
-    "allowJs": true,
-    "skipLibCheck": true,
+    "target": "ES2018",
+    "module": "ESNext",
+    "lib": ["dom", "es2019"],
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "moduleResolution": "node",
-    "resolveJsonModule": true,
-    "jsx": "react-jsx",
-    "outDir": "build",
-    "baseUrl": "./src",
-    "rootDir": "./src",
     "removeComments": true,
+    "jsx": "react",
     "types": ["node", "chrome"]
   },
-  "include": ["src"],
-  "exclude": ["node_modules", "build"]
+  "exclude": ["dist"]
 }

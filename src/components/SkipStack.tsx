@@ -1,6 +1,6 @@
 import * as React from "react";
 import { VStack, Button, Heading, HStack } from "@chakra-ui/react";
-import { formatTime } from "../lib/utils";
+import { formatTime } from "../js/utils";
 
 interface CompProps {
   btn: string;
@@ -27,7 +27,8 @@ const SkipStack: React.FC<CompProps> = ({
         colorScheme={"twitter"}
         onClick={btnEvent}
         isLoading={isLoading}
-        shadow="md">
+        shadow="md"
+      >
         {btn}
       </Button>
       <HStack>
@@ -42,7 +43,8 @@ const SkipStack: React.FC<CompProps> = ({
           shadow="md"
           onClick={() => {
             resetBTN();
-          }}>
+          }}
+        >
           Reset
         </Button>
       </HStack>
