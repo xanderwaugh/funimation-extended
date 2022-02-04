@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, useColorMode } from "@chakra-ui/react";
+import { Box, ColorMode, Divider, useColorMode } from "@chakra-ui/react";
 import { theme } from "./theme";
 
 const Wrapper: React.FC = ({ children }) => {
@@ -16,4 +16,15 @@ const Wrapper: React.FC = ({ children }) => {
   );
 };
 
-export { Wrapper };
+interface DividerProps {
+  colorMode: ColorMode;
+}
+
+const CustomDivider: React.FC<DividerProps> = ({ colorMode }) => (
+  <Divider
+    my={".25rem"}
+    borderColor={colorMode === "light" ? "gray" : "white"}
+  />
+);
+
+export { Wrapper, CustomDivider };

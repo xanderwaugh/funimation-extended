@@ -4,7 +4,7 @@ import {
   withDefaultColorScheme,
 } from "@chakra-ui/react";
 import { createBreakpoints } from "@chakra-ui/theme-tools";
-import "@fontsource/allerta";
+// import "@fontsource/allerta";
 
 const myConfig: ThemeConfig = {
   initialColorMode: "light",
@@ -19,8 +19,9 @@ const myBreakpoints = createBreakpoints({
 });
 
 const fontConfig = {
-  mono: "Allerta",
-  heading: "Allerta",
+  mono: "'Asap', sans-serif",
+  body: "'Asap', sans-serif",
+  heading: "'Asap', sans-serif",
 };
 
 const theme = extendTheme(

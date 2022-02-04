@@ -1,5 +1,11 @@
 import * as React from "react";
-import { VStack, Button, Heading, HStack } from "@chakra-ui/react";
+import {
+  VStack,
+  Button,
+  Heading,
+  HStack,
+  useColorMode,
+} from "@chakra-ui/react";
 import { formatTime } from "../js/utils";
 
 interface CompProps {
@@ -19,23 +25,25 @@ const SkipStack: React.FC<CompProps> = ({
   btnEvent,
   resetBTN,
 }) => {
+  const { colorMode } = useColorMode();
   return (
     <VStack mx="auto" textAlign={"center"}>
-      <Button
-        size="sm"
-        p={1}
-        colorScheme={"twitter"}
-        onClick={btnEvent}
-        isLoading={isLoading}
-        shadow="md"
+      <HStack
+        rounded="md"
+        p={"2px"}
+        bg={colorMode === "light" ? "gray.400" : "gray"}
+        spacing={4}
       >
-        {btn}
-      </Button>
-      <HStack>
-        <Heading fontSize={"md"}>
-          {timeTitle} <br />
-          {timeValue ? formatTime(timeValue) : "00:00"}
-        </Heading>
+        <Button
+          size="sm"
+          p={1}
+          colorScheme={"twitter"}
+          onClick={btnEvent}
+          isLoading={isLoading}
+          shadow="md"
+        >
+          {btn}
+        </Button>
         <Button
           size="sm"
           p={1}
@@ -48,6 +56,10 @@ const SkipStack: React.FC<CompProps> = ({
           Reset
         </Button>
       </HStack>
+      <Heading fontSize={"md"}>
+        {timeTitle} <br />
+        {timeValue ? formatTime(timeValue) : "00:00"}
+      </Heading>
     </VStack>
   );
 };

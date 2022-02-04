@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from "react";
 import {
-  Skeleton,
+  setCStorage,
+  sendActionCB,
+  getIntroKey,
+  getOutroKey,
+  tabQueryOpts,
+} from "../js/utils";
+import {
   VStack,
   Divider,
   Heading,
@@ -8,109 +14,81 @@ import {
   Switch,
   Checkbox,
   Text,
+  useColorMode,
+  ColorMode,
 } from "@chakra-ui/react";
 import {
-  sendActionCB,
-  sendAction,
-  getIntroKey,
-  rmItemCStorage,
-  setCStorage,
-  getOutroKey,
-} from "../js/utils";
-import { PlayerInfo } from "../components/PlayerInfo";
-import { SkipStack } from "../components/SkipStack";
-import { Wrapper } from "../components/Wrapper";
-import { ColorModeSwitch } from "../components/ColorModeSwitch";
-import { useColorMode } from "@chakra-ui/react";
+  PlayerInfo,
+  SkipStack,
+  Wrapper,
+  ColorModeSwitch,
+  TitleCard,
+  CustomDivider,
+} from "../components";
 
 const Popup: React.FC = () => {
-  // ! Check if Content Script is Injected
-  const [isContentAlive, setIsContentAlive] = useState(false);
-  // ! Has Page Loaded
+  // * Main States
   const [mount, setMount] = useState(false);
-  // ! Enable / Disable Extension Controlling Funimation
+  const [CSState, setCSState] = useState(false);
   const [isEnabled, setEnabled] = useState(true);
-
-  // Player Keys
+  // * Video Player Data
+  const [showName, setShowName] = useState("");
   const [playerTime, setPlayerTime] = useState<number | undefined>();
   const [videoLength, setVideoLength] = useState<number | undefined>();
-  const [showName, setShowName] = useState("");
-
-  // Chrome Storage Keys
+  // * Chrome Storage
   const [introTime, setIntroTime] = useState<number | undefined>();
   const [outroTime, setOutroTime] = useState<number | undefined>();
-
-  // additions
   const [maxQuality, setMaxQuality] = useState(false);
+  // * UI / UX
+  const [introAnim, setIntroAnim] = useState(false);
+  const [outroAnim, setOutroAnim] = useState(false);
   const { colorMode } = useColorMode();
 
-  // * Smooth Button Animations
-  const [introBtnLoading, setIntroLoading] = useState(false);
-  const [outroBtnLoading, setOutroLoading] = useState(false);
-
-  // * Called on Inital Popup Load
+  // * Logic
   useEffect(() => {
-    // ? Initial Things - Dont Need Timer
-    // ! Check if on Funimation
-    sendActionCB("isOnFunimation", setIsContentAlive);
-    if (!isContentAlive) return;
+    if (!CSState) return;
 
-    // * Get Max Quality State
-    chrome.storage.sync.get(["maxQuality"]).then((value) => {
-      setMaxQuality(value["maxQuality"]);
-    });
-
-    // * IntroTime & OutroTime
+    // * Calls to Content Script
     sendActionCB("getShowName", setShowName);
     sendActionCB("getIntroTime", setIntroTime);
     sendActionCB("getOutroTime", setOutroTime);
     sendActionCB("getVideoLength", setVideoLength);
 
-    // ! Update Every Sec
+    // ! Poll Every Sec
     const interval = setInterval(() => {
-      // ? Call Content Script for Player Time
       sendActionCB("getPlayerTime", setPlayerTime);
     }, 1000);
     return () => clearInterval(interval);
-  }, [
-    showName,
-    playerTime,
-    introTime,
-    outroTime,
-    videoLength,
-    isContentAlive,
-  ]);
+  }, [showName, playerTime, introTime, outroTime, videoLength, CSState]);
 
+  // * Initial Things
   useEffect(() => {
+    // * Check if on funimation
+    sendActionCB("isOnFunimation", setCSState);
+
+    chrome.storage.sync.get(["maxQuality"]).then((value) => {
+      setMaxQuality(value["maxQuality"] ?? false);
+    });
+
     setMount(true);
   }, []);
 
-  if (!mount)
+  if (!mount || !CSState)
     return (
       <Wrapper>
-        <Skeleton />
+        <TemplatePopup colorMode={colorMode} />
       </Wrapper>
     );
-  if (!isContentAlive) return <TemplatePopup />;
 
   return (
     <Wrapper>
       <VStack
         mx="auto"
-        divider={
-          <Divider
-            borderColor={colorMode === "light" ? "gray" : "white"}
-          />
-        }
+        spacing={12}
+        divider={<CustomDivider colorMode={colorMode} />}
       >
-        <HStack>
-          <VStack spacing={0} pt={".5rem"}>
-            <Heading lineHeight={"1"}>Funimation</Heading>
-            <Heading lineHeight={"1"}>Extended</Heading>
-          </VStack>
-          <ColorModeSwitch />
-        </HStack>
-        {/* HERO */}
+        {/* //* HERO */}
+        <TitleCard />
         <HStack>
           <Text textAlign={"center"} fontSize={"md"}>
             Improve your watching experience!
@@ -120,10 +98,15 @@ const Popup: React.FC = () => {
               defaultChecked={true}
               size="lg"
               colorScheme={"twitter"}
-              shadow={"md"}
+              // shadow={"md"}
               onChange={() => {
                 setEnabled(!isEnabled);
-                sendAction(isEnabled ? "disable" : "enable");
+                chrome.tabs.query(tabQueryOpts).then((tabs) => {
+                  if (tabs[0].id)
+                    chrome.tabs.sendMessage(tabs[0].id, {
+                      action: isEnabled ? "disable" : "enable",
+                    });
+                });
               }}
             />
             <Text fontSize={"1rem"}>
@@ -132,77 +115,74 @@ const Popup: React.FC = () => {
           </VStack>
         </HStack>
 
-        {/* // * Player Controls */}
+        {/* //* Player Info */}
         <PlayerInfo showname={showName} playerTime={playerTime} />
 
-        {/* // * Intro Skipping */}
+        {/* //* Skip Intro */}
         <SkipStack
-          btn="Set Intro Skip"
-          timeTitle="Intro Time"
+          btn="Set Intro Time"
+          timeTitle="Intro Time @:"
           timeValue={introTime}
-          isLoading={introBtnLoading}
+          isLoading={introAnim}
           resetBTN={() => {
             const waitkey = setTimeout(() => {
               setIntroTime(0);
-              const introKey = getIntroKey(showName);
-              rmItemCStorage(introKey).then(() => {
-                console.log("Sucessfully cleared", introKey);
-              });
+              chrome.storage.sync.remove(getIntroKey(showName));
             }, 1000);
             return () => clearTimeout(waitkey);
           }}
           btnEvent={() => {
             if (!playerTime) return;
-            setIntroLoading(true);
+            setIntroAnim(true);
             const waitkey = setTimeout(() => {
               setIntroTime(playerTime);
               const introKey = getIntroKey(showName);
               setCStorage(introKey, playerTime);
-              setIntroLoading(false);
+              setIntroAnim(false);
             }, 1000);
             return () => clearTimeout(waitkey);
           }}
         />
 
-        {/* Outro Skipping */}
+        {/* //* Skip Outro */}
         <SkipStack
-          btn="Set Outro Next ep."
-          timeTitle="Outro Time"
+          btn="Set Outro Time"
+          timeTitle="Outro Time @:"
           timeValue={outroTime}
-          isLoading={outroBtnLoading}
+          isLoading={outroAnim}
           resetBTN={() => {
             const waitkey = setTimeout(() => {
-              setOutroTime(undefined);
-              const outroKey = getOutroKey(showName);
-              rmItemCStorage(outroKey).then(() => {
-                console.log("Sucessfully cleared", outroKey);
-              });
+              chrome.storage.sync.remove(getOutroKey(showName));
             }, 1000);
             return () => clearTimeout(waitkey);
           }}
           btnEvent={() => {
-            setOutroLoading(true);
+            setOutroAnim(true);
             const waitkey = setTimeout(() => {
               const outroKey = getOutroKey(showName);
               setCStorage(outroKey, playerTime ?? 1920);
               setOutroTime(playerTime);
-              setOutroLoading(false);
+              setOutroAnim(false);
             }, 1000);
             return () => clearTimeout(waitkey);
           }}
         />
 
-        {/* Checkbox for 1080p */}
+        {/* //* Max Quality */}
         <Checkbox
           defaultChecked={maxQuality}
           onChange={(e) => {
             e.preventDefault();
             setMaxQuality(e.target.checked);
-            sendAction(
-              e.target.checked
-                ? "maxQuality-enable"
-                : "maxQuality-disable"
-            );
+            chrome.tabs.query(tabQueryOpts).then((tabs) => {
+              if (tabs[0].id) {
+                chrome.tabs.sendMessage(tabs[0].id, {
+                  action: e.target.checked
+                    ? "maxQuality-enable"
+                    : "maxQuality-disable",
+                });
+              }
+            });
           }}
         >
           Auto 1080p
@@ -213,22 +193,10 @@ const Popup: React.FC = () => {
 };
 export { Popup };
 
-const TemplatePopup: React.FC = () => {
-  const [mount, setMount] = useState(false);
-  const { colorMode } = useColorMode();
-
-  useEffect(() => {
-    setMount(true);
-  }, []);
-
-  if (!mount)
-    return (
-      <Wrapper>
-        <Skeleton />
-      </Wrapper>
-    );
-
-  //
+interface TemplateProps {
+  colorMode: ColorMode;
+}
+const TemplatePopup: React.FC<TemplateProps> = ({ colorMode }) => {
   return (
     <Wrapper>
       <VStack
